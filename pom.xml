@@ -20,13 +20,15 @@
 /* $Id$ */
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<!--
    <parent>
    	   <groupId>net.java</groupId>
    	   <artifactId>jvnet-parent</artifactId>
    	   <version>1</version>
    </parent>
+-->
    <modelVersion>4.0.0</modelVersion>
-   <groupId>net.jthink</groupId>
+   <groupId>Multifarious</groupId>
    <artifactId>jaudiotagger</artifactId>
    <version>2.0.4-SNAPSHOT</version>
    <packaging>jar</packaging>
@@ -36,6 +38,8 @@
     for editing tag information in audio files.
     Most existing solutions are not java based inhibiting the use of
     java applications with digital files.
+
+    --This is the Multifarious version of JAudioTagger.--
    </description>
    <url>http://java.net/projects/jaudiotagger/</url>
    <inceptionYear>2005</inceptionYear>
@@ -51,18 +55,6 @@
       <name>java.net</name>
       <url>http://www.java.net/</url>
    </organization>
-   <mailingLists>
-      <mailingList>
-         <name>Development mailing list</name>
-         <post>dev@jaudiotagger.dev.java.net</post>
-         <archive>https://jaudiotagger.dev.java.net/servlets/SummarizeList?listName=dev</archive>
-      </mailingList>
-      <mailingList>
-         <name>Issues mailing list</name>
-         <post>issues@jaudiotagger.dev.java.net</post>
-         <archive>https://jaudiotagger.dev.java.net/servlets/SummarizeList?listName=issues</archive>
-      </mailingList>
-   </mailingLists>
    <developers>
       <developer>
          <id>paultaylor</id>
@@ -94,9 +86,11 @@
    </dependencies>
    <build>
       <plugins>
+<!--
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.4</version>
             <executions>
                <execution>
                   <id>sign-artifacts</id>
@@ -107,26 +101,41 @@
                </execution>   
             </executions> 
          </plugin>
+-->
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
+            <version>2.3.2</version>
             <configuration>
                <encoding>UTF-8</encoding>
-               <source>1.5</source>
-               <target>1.5</target>
+               <source>1.6</source>
+               <target>1.6</target>
             </configuration>
          </plugin>
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.10</version>
             <configuration>
-              <argLine>-Dfile.encoding=UTF-8</argLine>
+              <systemPropertyVariables>
+                <java.awt.headless>true</java.awt.headless>
+                <file.encoding>UTF-8</file.encoding>
+              </systemPropertyVariables>
+              <excludes>
+                <!-- These are all tests which fail because some of their data files are not checked in. -->
+                <exclude>**/M4aReadTagTest.java</exclude>
+                <exclude>**/ID3v24TagTest.java</exclude>
+                <exclude>**/Issue028Test.java</exclude>
+                <exclude>**/Issue324Test.java</exclude>
+                <exclude>**/ID3v24TagTest.java</exclude>
+              </excludes>
             </configuration>        
          </plugin>
 
          <plugin>
            <groupId>org.apache.maven.plugins</groupId>
            <artifactId>maven-source-plugin</artifactId>
+           <version>2.1.2</version>
            <executions>
              <execution>
              <id>attach-sources</id>
@@ -136,9 +145,12 @@
              </execution>
            </executions>
          </plugin>              
+<!--
+    Too many javadoc errors, so this doesn't actually run.
          <plugin>
            <groupId>org.apache.maven.plugins</groupId>
            <artifactId>maven-javadoc-plugin</artifactId>
+           <version>2.8</version>
            <executions>
              <execution>
              <id>attach-javadocs</id>
@@ -148,6 +160,7 @@
              </execution>
            </executions>
          </plugin>
+-->
       </plugins>
       <sourceDirectory>src</sourceDirectory>
       <testSourceDirectory>srctest</testSourceDirectory>
@@ -157,23 +170,16 @@
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.6.1</version>
+            <version>2.8</version>
             <configuration>
                <show>private</show>
                <use>false</use>
             </configuration>
          </plugin>
          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-project-info-reports-plugin</artifactId>
-         </plugin>
-         <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-report-plugin</artifactId>
-         </plugin>                  
-         <plugin>
            <groupId>org.codehaus.mojo</groupId>
            <artifactId>cobertura-maven-plugin</artifactId>
+           <version>2.5.1</version>
            <configuration>
              <formats>
                <format>html</format>
@@ -184,6 +190,7 @@
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-pmd-plugin</artifactId>
+            <version>2.5</version>
             <configuration>
               <targetJdk>1.5</targetJdk>
             </configuration>

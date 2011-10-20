@@ -253,6 +253,47 @@ public class ID3v11Tag extends ID3v1Tag
 
     }
 
+
+    /**
+     * Creates a new ID3v11 tag by reading a bytebuffer instead of a file
+     *
+     * @param fileBuffer A ByteBuffer containing the entire contents of the file, with the limit set as the length of the file
+     * @param loggingName A name to use for the buffer in logs
+     * @throws TagNotFoundException if the buffer does not contain an ID3v1 tag
+     * @throws IOException under undetermined circumstances
+     */
+
+    public ID3v11Tag(ByteBuffer fileBuffer, String loggingName) throws TagNotFoundException, IOException
+    {
+        setLoggingFilename(loggingName);
+
+        if(fileBuffer.limit() <= TAG_LENGTH){
+            throw new TagNotFoundException("ID3v1 tag not found: buffer not long enough to contain a tag");
+        }
+
+        fileBuffer.position(fileBuffer.limit() - TAG_LENGTH);
+        ByteBuffer tagBuffer = fileBuffer.slice();
+
+        read(tagBuffer);
+    }
+
+
+    public static ID3v11Tag carveID3v11Tag(ByteBuffer fileBuffer) throws IOException
+    {
+
+        try{
+            ID3v11Tag tag = new ID3v11Tag(fileBuffer, "");
+            // Success.  Truncate buffer to remove tag.
+            fileBuffer.limit(fileBuffer.limit() - TAG_LENGTH);
+
+            return tag;
+        }
+        catch(TagNotFoundException tnfx){
+            return null;
+        }
+    }
+
+
     /**
      * Set Comment
      *
@@ -534,79 +575,51 @@ public class ID3v11Tag extends ID3v1Tag
         genre = dataBuffer[FIELD_GENRE_POS];
     }
 
-
-    /**
-     * Write this representation of tag to the file indicated
-     *
-     * @param file that this tag should be written to
-     * @throws IOException thrown if there were problems writing to the file
+    /* 
+     * The only difference between this one and the v1.0 one is the track byte.
      */
-    public void write(RandomAccessFile file) throws IOException
+    @Override
+    public byte[] generateTagBytes()
     {
-        logger.config("Saving ID3v11 tag to file");
         byte[] buffer = new byte[TAG_LENGTH];
-        int i;
-        String str;
-        delete(file);
-        file.seek(file.length());
-        System.arraycopy(TAG_ID, FIELD_TAGID_POS, buffer, FIELD_TAGID_POS, TAG_ID.length);
-        int offset = FIELD_TITLE_POS;
+
+        System.arraycopy(TAG_ID, 0, buffer, FIELD_TAGID_POS, TAG_ID.length);
+
         if (TagOptionSingleton.getInstance().isId3v1SaveTitle())
         {
-            str = ID3Tags.truncate(title, FIELD_TITLE_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
+            writeStringToBufferAsLatin1(buffer, FIELD_TITLE_POS, FIELD_TITLE_LENGTH, title);
         }
-        offset = FIELD_ARTIST_POS;
+
         if (TagOptionSingleton.getInstance().isId3v1SaveArtist())
         {
-            str = ID3Tags.truncate(artist, FIELD_ARTIST_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
+            writeStringToBufferAsLatin1(buffer, FIELD_ARTIST_POS, FIELD_ARTIST_LENGTH, artist);
         }
-        offset = FIELD_ALBUM_POS;
+
         if (TagOptionSingleton.getInstance().isId3v1SaveAlbum())
         {
-            str = ID3Tags.truncate(album, FIELD_ALBUM_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
+            writeStringToBufferAsLatin1(buffer, FIELD_ALBUM_POS, FIELD_ALBUM_LENGTH, album);
         }
-        offset = FIELD_YEAR_POS;
+
         if (TagOptionSingleton.getInstance().isId3v1SaveYear())
         {
-            str = ID3Tags.truncate(year, FIELD_YEAR_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
+            writeStringToBufferAsLatin1(buffer, FIELD_YEAR_POS, FIELD_YEAR_LENGTH, year);
         }
-        offset = FIELD_COMMENT_POS;
+
         if (TagOptionSingleton.getInstance().isId3v1SaveComment())
         {
-            str = ID3Tags.truncate(comment, FIELD_COMMENT_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
+            writeStringToBufferAsLatin1(buffer, FIELD_COMMENT_POS, FIELD_COMMENT_LENGTH, comment);
         }
-        offset = FIELD_TRACK_POS;
-        buffer[offset] = track; // skip one byte extra blank for 1.1 definition
-        offset = FIELD_GENRE_POS;
+
+        buffer[FIELD_TRACK_POS] = track; // skip one byte extra blank for 1.1 definition
+
         if (TagOptionSingleton.getInstance().isId3v1SaveGenre())
         {
-            buffer[offset] = genre;
+            buffer[FIELD_GENRE_POS] = genre;
         }
-        file.write(buffer);
 
-        logger.config("Saved ID3v11 tag to file");
+        return buffer;
+
     }
-
 
     public void createStructure()
     {

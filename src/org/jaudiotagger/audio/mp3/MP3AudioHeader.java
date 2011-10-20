@@ -139,6 +139,17 @@ public class MP3AudioHeader implements AudioHeader
         }
     }
 
+    public MP3AudioHeader(ByteBuffer dataBuffer, String logName)
+        throws IOException, InvalidAudioFrameException
+    {
+        if(!readHeaderAt(dataBuffer))
+        {
+            throw new InvalidAudioFrameException("No header found at start of audio data buffer " + logName);
+        }
+
+    }
+
+
     /**
      * Returns true if the first MP3 frame can be found for the MP3 file
      * <p/>
@@ -321,6 +332,58 @@ public class MP3AudioHeader implements AudioHeader
         */
         return syncFound;
     }
+
+    // TODO: Make this method do all the fancy stuff the previous one does
+    private boolean readHeaderAt(ByteBuffer audioData)
+        throws IOException, InvalidAudioFrameException
+    {
+
+        if(!MPEGFrameHeader.isMPEGFrame(audioData)) return false;
+
+        mp3FrameHeader = MPEGFrameHeader.parseMPEGHeader(audioData);
+
+        ByteBuffer specialHeader = XingFrame.isXingFrame(audioData, mp3FrameHeader);
+
+        if(specialHeader != null){
+            try
+            {
+                //Parses Xing frame without modifying position of main buffer
+                mp3XingFrame = XingFrame.parseXingFrame(specialHeader);
+            }
+            catch (InvalidAudioFrameException ex)
+            {
+                // We Ignore because even if Xing Header is corrupted
+                //doesn't mean file is corrupted
+            }
+        }
+        else {
+            specialHeader = VbriFrame.isVbriFrame(audioData, mp3FrameHeader);
+            if(specialHeader != null){
+
+                try
+                {
+                    //Parses Vbri frame without modifying position of main buffer
+                    mp3VbriFrame = VbriFrame.parseVBRIFrame(specialHeader);
+                }
+                catch (InvalidAudioFrameException ex)
+                {
+                    // We Ignore because even if Vbri Header is corrupted
+                    //doesn't mean file is corrupted
+                }
+            }
+        }
+
+        setFileSize(audioData.limit());
+        setMp3StartByte(0);
+        setTimePerFrame();
+        setNumberOfFrames();
+        setTrackLength();
+        setBitRate();
+        setEncoder();
+        
+        return true;
+    }
+
 
     /**
      * Called in some circumstances to check the next frame to ensure we have the correct audio header

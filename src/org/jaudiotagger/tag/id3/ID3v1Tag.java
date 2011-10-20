@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Matcher;
 
@@ -57,6 +58,8 @@ public class ID3v1Tag extends AbstractID3v1Tag implements Tag
         tagFieldToID3v1Field.put(FieldKey.GENRE, ID3v1FieldKey.GENRE);
         tagFieldToID3v1Field.put(FieldKey.COMMENT, ID3v1FieldKey.COMMENT);
     }
+
+    private static final Charset CHARSET_LATIN1 = Charset.forName("ISO-8859-1"); // Required on all JVMs
 
     //For writing output
     protected static final String TYPE_COMMENT = "comment";
@@ -935,6 +938,58 @@ public class ID3v1Tag extends AbstractID3v1Tag implements Tag
         return (Arrays.equals(buffer, TAG_ID));
     }
 
+
+    protected static int writeStringToBufferAsLatin1(byte[] buffer, int offset, int maxBytes, String val)
+    {
+        if(val == null || val.length() == 0) return 0;
+
+        byte[] valBytes = val.getBytes(CHARSET_LATIN1);
+        int bytesToCopy = Math.min(maxBytes, valBytes.length);
+        System.arraycopy(valBytes, 0, buffer, offset, bytesToCopy);
+        return bytesToCopy;
+    }
+
+
+    public byte[] generateTagBytes()
+    {
+        byte[] buffer = new byte[TAG_LENGTH];
+        
+        System.arraycopy(TAG_ID, 0, buffer, FIELD_TAGID_POS, TAG_ID.length);
+
+        if (TagOptionSingleton.getInstance().isId3v1SaveTitle())
+        {
+            writeStringToBufferAsLatin1(buffer, FIELD_TITLE_POS, FIELD_TITLE_LENGTH, title);
+        }
+
+        if (TagOptionSingleton.getInstance().isId3v1SaveArtist())
+        {
+            writeStringToBufferAsLatin1(buffer, FIELD_ARTIST_POS, FIELD_ARTIST_LENGTH, artist);
+        }
+
+        if (TagOptionSingleton.getInstance().isId3v1SaveAlbum())
+        {
+            writeStringToBufferAsLatin1(buffer, FIELD_ALBUM_POS, FIELD_ALBUM_LENGTH, album);
+        }
+
+        if (TagOptionSingleton.getInstance().isId3v1SaveYear())
+        {
+            writeStringToBufferAsLatin1(buffer, FIELD_YEAR_POS, FIELD_YEAR_LENGTH, year);
+        }
+
+        if (TagOptionSingleton.getInstance().isId3v1SaveComment())
+        {
+            writeStringToBufferAsLatin1(buffer, FIELD_COMMENT_POS, FIELD_COMMENT_LENGTH, comment);
+        }
+
+        if (TagOptionSingleton.getInstance().isId3v1SaveGenre())
+        {
+            buffer[FIELD_GENRE_POS] = genre;
+        }
+
+        return buffer;
+    }
+
+
     /**
      * Write this tag to the file, replacing any tag previously existing
      *
@@ -944,66 +999,14 @@ public class ID3v1Tag extends AbstractID3v1Tag implements Tag
     public void write(RandomAccessFile file) throws IOException
     {
         logger.config("Saving ID3v1 tag to file");
-        byte[] buffer = new byte[TAG_LENGTH];
-        int i;
-        String str;
+        byte[] buffer = generateTagBytes();
         delete(file);
         file.seek(file.length());
         //Copy the TAGID into new buffer
-        System.arraycopy(TAG_ID, FIELD_TAGID_POS, buffer, FIELD_TAGID_POS, TAG_ID.length);
-        int offset = FIELD_TITLE_POS;
-        if (TagOptionSingleton.getInstance().isId3v1SaveTitle())
-        {
-            str = ID3Tags.truncate(title, FIELD_TITLE_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
-        }
-        offset = FIELD_ARTIST_POS;
-        if (TagOptionSingleton.getInstance().isId3v1SaveArtist())
-        {
-            str = ID3Tags.truncate(artist, FIELD_ARTIST_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
-        }
-        offset = FIELD_ALBUM_POS;
-        if (TagOptionSingleton.getInstance().isId3v1SaveAlbum())
-        {
-            str = ID3Tags.truncate(album, FIELD_ALBUM_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
-        }
-        offset = FIELD_YEAR_POS;
-        if (TagOptionSingleton.getInstance().isId3v1SaveYear())
-        {
-            str = ID3Tags.truncate(year, AbstractID3v1Tag.FIELD_YEAR_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
-        }
-        offset = FIELD_COMMENT_POS;
-        if (TagOptionSingleton.getInstance().isId3v1SaveComment())
-        {
-            str = ID3Tags.truncate(comment, FIELD_COMMENT_LENGTH);
-            for (i = 0; i < str.length(); i++)
-            {
-                buffer[i + offset] = (byte) str.charAt(i);
-            }
-        }
-        offset = FIELD_GENRE_POS;
-        if (TagOptionSingleton.getInstance().isId3v1SaveGenre())
-        {
-            buffer[offset] = genre;
-        }
         file.write(buffer);
         logger.config("Saved ID3v1 tag to file");
     }
+
 
     /**
      * Create structured representation of this item.

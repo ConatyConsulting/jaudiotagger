@@ -74,6 +74,14 @@ public abstract class AbstractID3v2Tag extends AbstractID3Tag implements Tag
     //The max size we try to write in one go to avoid out of memory errors (10mb)
     private static final long MAXIMUM_WRITABLE_CHUNK_SIZE = 10000000;
 
+    public static class TagHeaderInfo
+    {
+        public byte majorVersion;
+        public byte minorVersion;
+        public int tagSize;
+    }
+
+
     /**
      * Map of all frames for this tag
      */
@@ -1056,6 +1064,39 @@ public abstract class AbstractID3v2Tag extends AbstractID3Tag implements Tag
         //addField header size to frame size
         frameSize += TAG_HEADER_LENGTH;
         return frameSize;
+    }
+
+
+    public static TagHeaderInfo getV2HeaderInfo(ByteBuffer dataBuffer)
+        throws IOException
+    {
+        if(dataBuffer.remaining() < TAG_HEADER_LENGTH){
+            return null;
+        }
+
+        TagHeaderInfo resInfo = new TagHeaderInfo();
+
+        int originalBufferPosition = dataBuffer.position();
+
+        // Check header
+        for(int i = 0; i < TAG_ID.length; ++i){
+            if(TAG_ID[i] != dataBuffer.get()){
+                dataBuffer.position(originalBufferPosition);
+                return null;
+            }
+        }
+
+        resInfo.majorVersion = dataBuffer.get();
+        resInfo.minorVersion = dataBuffer.get();
+
+        // Flags
+        dataBuffer.get();
+
+        resInfo.tagSize = ID3SyncSafeInteger.bufferToValue(dataBuffer) + TAG_HEADER_LENGTH;
+
+        dataBuffer.position(originalBufferPosition);
+        return resInfo;
+        
     }
 
     /**

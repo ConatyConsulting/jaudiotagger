@@ -172,7 +172,7 @@ public class NewInterfaceTest extends TestCase
         //Create v1 tag (old method)
         ID3v11Tag v1tag = new ID3v11Tag();
         v1tag.setField(FieldKey.ARTIST,V1_ARTIST);
-        v1tag.setField(FieldKey.ALBUM,"V1ALBUM" + "\u01ff");         //Note always convert to single byte so will be written as FF
+        v1tag.setField(FieldKey.ALBUM,"V1ALBUM" + "\u01ff");         //Note always convert to Latin-1 so will be written as ?
         v1tag.setField(v1tag.createField(FieldKey.TITLE, "title"));
         v1tag.setField(FieldKey.GENRE,"Rock");
         v1tag.setField(v1tag.createField(FieldKey.TRACK, "12"));
@@ -188,7 +188,7 @@ public class NewInterfaceTest extends TestCase
         assertEquals(V1_ARTIST, af.getTag().getFirst(FieldKey.ARTIST));
         assertEquals(V1_ARTIST, af.getTag().getFirst(FieldKey.ARTIST));
         assertEquals(V1_ARTIST, af.getTag().getFirst(FieldKey.ARTIST));
-        assertEquals("V1ALBUM" + "\u00ff", af.getTag().getFirst(FieldKey.ALBUM));  //Lost the 00, is that what we want
+        assertEquals("V1ALBUM" + "?", af.getTag().getFirst(FieldKey.ALBUM));  //Lost the 00, is that what we want
         assertEquals("title", af.getTag().getFirst(FieldKey.TITLE));
         assertEquals("title", af.getTag().getFirst(FieldKey.TITLE));
         assertEquals("Rock", af.getTag().getFirst(FieldKey.GENRE));

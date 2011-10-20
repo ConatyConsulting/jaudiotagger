@@ -123,8 +123,9 @@ public abstract class AbstractTestCase extends TestCase {
 
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException("Error copying file " + fromFile.getAbsolutePath() + " to " + toFile.getAbsolutePath(), e);
+            // e.printStackTrace();
+            // return false;
         }
 
     }
