@@ -1,3 +1,8 @@
 *.iml
 *.ipr
 *.iws
+TEST.TXT
+target/
+test1.wma
+testV1.mp3
+testdatatmp/
